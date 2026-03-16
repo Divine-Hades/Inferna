@@ -1,0 +1,29 @@
+{
+  "name": "bolt",
+  "version": "1.0.0",
+  "description": "A Discord bot for the The Engineering Guild Discord server.",
+  "license": "ISC",
+  "author": "Owen // DivineHades",
+  "type": "commonjs",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "github": {
+    "owner": "DivineHades",
+    "repo": "bolt"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.2.0",
+    "@prisma/client": "^7.2.0",
+    "cli-table3": "^0.6.5",
+    "discord.js": "^14.24.2",
+    "dotenv": "^17.2.3",
+    "glob": "^11.0.3",
+    "pg": "^8.16.3",
+    "winston": "^3.18.3"
+  },
+  "devDependencies": {
+    "prisma": "^7.2.0"
+  }
+}
