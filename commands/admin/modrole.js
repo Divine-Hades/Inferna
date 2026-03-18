@@ -68,6 +68,7 @@ module.exports = {
                   timestamp: new Date(),
                 },
               ],
+              flags: "Ephemeral"
             });
 
           await db.modRoles
