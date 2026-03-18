@@ -34,7 +34,7 @@ module.exports = {
           title: "Developers!",
           description: `${dataList}`,
           timestamp: new Date(),
-          color: parseInt(config.colors.woc),
+          color: parseInt(config.colors.inferna),
         },
       ],
     });
