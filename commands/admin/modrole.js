@@ -31,7 +31,15 @@ module.exports = {
         ),
     )
     .addSubcommand((cmd) =>
-      cmd.setName("delete").setDescription("Delete a mod role."),
+      cmd
+        .setName("delete")
+        .setDescription("Delete a mod role.")
+        .addRoleOption((opt) =>
+          opt
+            .setName("role")
+            .setDescription("Choose a role.")
+            .setRequired(true),
+        ),
     ),
 
   /**
@@ -68,7 +76,7 @@ module.exports = {
                   timestamp: new Date(),
                 },
               ],
-              flags: "Ephemeral"
+              flags: "Ephemeral",
             });
 
           await db.modRoles
@@ -139,12 +147,12 @@ module.exports = {
                   },
                 ],
                 components: [row, row2],
-                flags: "Ephemeral"
+                flags: "Ephemeral",
               });
 
               const btn_collector = res.createMessageComponentCollector({
-                componentType: ComponentType.Button
-              }); 
+                componentType: ComponentType.Button,
+              });
 
               btn_collector.on("collect", async (i) => {
                 if (i.customId === "mr_btn_skip") {
@@ -158,17 +166,16 @@ module.exports = {
                       res.edit({
                         embeds: [
                           {
-                            description:
-                              `${emojis.check} Mod role created! Skipped command setup.\n\nThis can be done later by using the command **/mod-role edit**`,
+                            description: `${emojis.check} Mod role created! Skipped command setup.\n\nThis can be done later by using the command **/mod-role edit**`,
                             color: parseInt(colors.green),
                           },
                         ],
                         components: [],
-                      }); 
+                      });
                     });
                 }
-              }); 
-              
+              });
+
               const slct_collector = res.createMessageComponentCollector({
                 componentType: ComponentType.StringSelect,
               });
@@ -182,7 +189,7 @@ module.exports = {
                 let opt_removeTimeout = false;
                 let opt_kick = false;
                 let opt_warnAdd = false;
-                let opt_warnRemove = false
+                let opt_warnRemove = false;
 
                 for (const selected of i.values) {
                   if (selected === "mr_sm_ban_cmd") {
@@ -209,7 +216,7 @@ module.exports = {
                     enabled_cmds.push("Warn Add");
                     opt_warnAdd = true;
                   }
-                  
+
                   if (selected === "mr_sm_warn_remove_cmd") {
                     enabled_cmds.push("Warn Remove");
                     opt_warnRemove = true;
@@ -249,15 +256,117 @@ module.exports = {
                       ],
                     });
                   });
-              })
-
+              });
             });
         }
         break;
       case "delete":
         {
+          let role = interaction.options.getRole("role");
+
+          const modRole = await db.modRoles.findUnique({
+            where: {
+              guildId_roleId: {
+                guildId: guild.id,
+                roleId: role.id,
+              },
+            },
+          });
+
+          if (!modRole)
+            return interaction.reply({
+              flags: "Ephemeral",
+              embeds: [
+                {
+                  title: "Unexpected Result",
+                  description: `${emojis.error} ${role} hasn't been assigned as a mod role. Please check the **/mod-role list** to see what roles are set up as a mod role.`,
+                  color: parseInt(colors.red),
+                  timestamp: new Date(),
+                },
+              ],
+            });
+
+          let btn_yes = new ButtonBuilder({
+            customId: "btn_yes",
+            label: "Confirm",
+            style: ButtonStyle.Success,
+          });
+
+          let btn_no = new ButtonBuilder({
+            customId: "btn_no",
+            label: "Deny",
+            style: ButtonStyle.Danger,
+          });
+
+          let row = new ActionRowBuilder().addComponents(btn_yes, btn_no);
+
+          let res = await interaction.reply({
+            embeds: [
+              {
+                description: `Are you sure you want to remove ${role} as a mod role and unassign all moderator commands from the role?`,
+                color: parseInt(colors.inferna),
+                timestamp: new Date(),
+              },
+            ],
+            components: [row],
+            flags: "Ephemeral",
+          });
+
+          let btn_collector = res.createMessageComponentCollector({
+            componentType: ComponentType.Button,
+          });
+
+          btn_collector.on("collect", async (i) => {
+            switch (i.customId) {
+              case "btn_yes":
+                {
+                  await db.modRoles.delete({
+                    where: {
+                      guildId_roleId: {
+                        guildId: guild.id,
+                        roleId: role.id,
+                      },
+                    },
+                  });
+
+                  await db.modRoleOptions.delete({
+                    where: {
+                      modRoleId: `${modRole.modRoleId}`,
+                    },
+                  });
+
+                  res.edit({
+                    embeds: [
+                      {
+                        description: `${emojis.check} ${role} has been removed as a moderator.`,
+                        color: parseInt(colors.green),
+                        timestamp: new Date(),
+                      },
+                    ],
+                    components: [],
+                  });
+                }
+                break;
+              case "btn_no": {
+                return res.edit({
+                  embeds: [
+                    {
+                      description: `Your action has been **cancelled**, have a nice day.`,
+                      color: parseInt(colors.red),
+                      timestamp: new Date(),
+                    },
+                  ],
+                  components: [],
+                });
+              }
+            }
+          });
         }
         break;
+      case "list": {
+        
+      }
+        break; 
     }
   },
 };
