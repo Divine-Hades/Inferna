@@ -12,6 +12,7 @@ const {
   ComponentType,
 } = require("discord.js");
 const { db, config } = require("../../main");
+const { Pagination } = require("pagination.djs");
 const { emojis, colors } = config;
 
 module.exports = {
@@ -40,6 +41,11 @@ module.exports = {
             .setDescription("Choose a role.")
             .setRequired(true),
         ),
+    )
+    .addSubcommand((cmd) =>
+      cmd
+        .setName("list")
+        .setDescription("Get the list all of all the server mod roles"),
     ),
 
   /**
@@ -363,10 +369,72 @@ module.exports = {
           });
         }
         break;
-      case "list": {
-        
-      }
-        break; 
+      case "list":
+        {
+          let modRoleRecords = await db.modRoles.findMany({
+            where: {
+              guildId: guild.id,
+            },
+          });
+
+          if (modRoleRecords.length < 1)
+            return interaction.reply({
+              flags: ["Ephemeral"],
+              embeds: [
+                {
+                  title: "Unexpected Result",
+                  description: `${emojis.error} This server has no mod roles set up. Use **/mod-role create** to create a mod role.`,
+                  color: parseInt(colors.red),
+                  timestamp: new Date(),
+                },
+              ],
+            });
+
+          let fields = [];
+
+          for (const record of modRoleRecords) {
+            let modRolePermissions = await db.modRoleOptions.findUnique({
+              where: {
+                modRoleId: record.modRoleId,
+              },
+            });
+
+            let enabledPerms = [];
+
+            if (modRolePermissions.enableBan === true) enabledPerms.push("Ban");
+            if (modRolePermissions.enableUnban === true)
+              enabledPerms.push("Unban");
+            if (modRolePermissions.enableTimeout === true)
+              enabledPerms.push("Timeout");
+            if (modRolePermissions.enableTimeoutRemove === true)
+              enabledPerms.push("Timeout Remove");
+            if (modRolePermissions.enableKick === true)
+              enabledPerms.push("Kick");
+            if (modRolePermissions.enableWarnAdd === true)
+              enabledPerms.push("Warn Add");
+            if (modRolePermissions.enableWarnRemove === true)
+              enabledPerms.push("Warn Remove");
+
+            fields.push({
+              name: `__Mod Role ${fields.length + 1}__`,
+              value: `**Assigned Role**: <@&${record.roleId}>\n**Enabled Commands**: ${enabledPerms.join(", ")}`,
+            });
+          }
+          const pagination = new Pagination(interaction, {
+            limit: 3,
+            ephemeral: true,
+            loop: true,
+          });
+
+          pagination
+            .setTitle("Server Mod Roles")
+            .setColor(parseInt(colors.inferna))
+            .addFields(fields)
+            .paginateFields(true);
+
+          pagination.render();
+        }
+        break;
     }
   },
 };
