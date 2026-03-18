@@ -2,5 +2,7 @@
   "connection_high": "<:status_green:1483515548078702714>", 
   "conneciton_medium": "<:status_yellow:1483515545683759395>",
   "connection_low": "<:status_red:1483515546573078842>", 
-  "loading": "<a:loading:1483514324369674266>"
+  "loading": "<a:loading:1483514324369674266>", 
+  "error": "<:error:1483514481643618327>", 
+  "check": "<:tick:1483514334456844421>"
 }
