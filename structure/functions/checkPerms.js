@@ -10,8 +10,9 @@ const { db, client } = require("../../main");
  * @param {ChatInputCommandInteraction} interaction
  * @param {Client} client
  * @param {modCmdOption} cmd
+ * @param {PermissionFlagsBits} permission
  */
-async function checkModPerms(interaction, client, cmd) {
+async function checkModPerms(interaction, cmd, permission) {
   let result = false;
 
   let modRoles = await db.modRoles.findMany({
@@ -22,7 +23,7 @@ async function checkModPerms(interaction, client, cmd) {
 
   if (!modRoles) {
     if (
-      interaction.member.permissions.has(PermissionFlagsBits.ManageMessages)
+      interaction.member.permissions.has(permission)
     ) {
       result = true;
     }
