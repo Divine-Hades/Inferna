@@ -25,6 +25,6 @@
     "winston": "^3.18.3"
   },
   "devDependencies": {
-    "prisma": "^6.19.2"
+    "prisma": "^7.2.0"
   }
 }

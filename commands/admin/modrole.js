@@ -143,8 +143,13 @@ module.exports = {
                     description: "Enables the warn remove command.",
                     value: "mr_sm_warn_remove_cmd",
                   },
+                  {
+                    label: "Purge Messages",
+                    description: "Enables the /purge command - clears messages",
+                    value: "mr_sm_purge_cmd",
+                  },
                 ],
-                max_values: 7,
+                max_values: 8,
               });
 
               const skipButton = new ButtonBuilder({
@@ -207,6 +212,7 @@ module.exports = {
                 let opt_kick = false;
                 let opt_warnAdd = false;
                 let opt_warnRemove = false;
+                let opt_purge = false;
 
                 for (const selected of i.values) {
                   if (selected === "mr_sm_ban_cmd") {
@@ -243,6 +249,11 @@ module.exports = {
                     enabled_cmds.push("Kick");
                     opt_kick = true;
                   }
+
+                  if (selected === "mr_sm_purge_cmd") {
+                    enabled_cmds.push("Purge");
+                    opt_purge = true
+                  }
                 }
 
                 await db.modRoleOptions
@@ -256,6 +267,7 @@ module.exports = {
                       enableTimeout: opt_timeout,
                       enableWarnAdd: opt_warnAdd,
                       enableWarnRemove: opt_warnRemove,
+                      enablePurge: opt_purge
                     },
                   })
                   .then(async (rec) => {
@@ -425,6 +437,8 @@ module.exports = {
               enabledPerms.push("Warn Add");
             if (modRolePermissions.enableWarnRemove === true)
               enabledPerms.push("Warn Remove");
+            if (modRolePermissions.enablePurge === true) 
+              enabledPerms.push("Purge")
 
             fields.push({
               name: `__Mod Role ${fields.length + 1}__`,
@@ -477,7 +491,7 @@ module.exports = {
         let slct_menu = new StringSelectMenuBuilder({
           customId: "slct_edit_modrole",
           placeholder: "Select mod commands to enable/disable",
-          max_values: 7,
+          max_values: 8,
           options: [
             {
               label: "Kick",
@@ -521,6 +535,12 @@ module.exports = {
               value: "mr_sm_warn_remove_cmd",
               default: modRole_options.enableWarnRemove,
             },
+            {
+              label: "Warn Purge",
+              description: "Enables the /purge remove command.",
+              value: "mr_sm_purge_cmd",
+              default: modRole_options.enablePurge,
+            },
           ],
         });
 
@@ -552,6 +572,7 @@ module.exports = {
         let enableTimeoutRemove = false;
         let enableWarnAdd = false;
         let enableWarnRemove = false;
+        let enablePurge = false;
 
         collector.on("collect", async (i) => {
           for (const val of i.values) {
@@ -589,6 +610,11 @@ module.exports = {
               enableWarnRemove = true;
               enabledCommands.push("Warn Remove");
             }
+
+            if (val === "mr_sm_purge_cmd") {
+              enablePurge = true; 
+              enabledCommands.push("Purge");
+            }
           }
 
           if (enableKick === false) disabledCommands.push("Kick");
@@ -599,6 +625,7 @@ module.exports = {
             disabledCommands.push("Timeout Remove");
           if (enableWarnAdd === false) disabledCommands.push("Warn");
           if (enableWarnRemove === false) disabledCommands.push("Warn Remove");
+          if (enablePurge === false) disabledCommands.push("Purge");
 
           await db.modRoleOptions
             .update({
@@ -613,6 +640,7 @@ module.exports = {
                 enableUnban: enableUnban,
                 enableWarnAdd: enableWarnAdd,
                 enableWarnRemove: enableWarnRemove,
+                enablePurge: enablePurge
               },
             })
             .then(() => {
