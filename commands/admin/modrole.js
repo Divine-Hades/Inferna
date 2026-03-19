@@ -401,7 +401,8 @@ module.exports = {
 
             let enabledPerms = [];
 
-            if (modRolePermissions.enableBan === true) enabledPerms.push("Ban");
+            if (modRolePermissions.enableBan === true)
+                enabledPerms.push("Ban");
             if (modRolePermissions.enableUnban === true)
               enabledPerms.push("Unban");
             if (modRolePermissions.enableTimeout === true)
