@@ -22,9 +22,7 @@ async function checkModPerms(interaction, cmd, permission) {
   });
 
   if (!modRoles) {
-    if (
-      interaction.member.permissions.has(permission)
-    ) {
+    if (interaction.member.permissions.has(permission)) {
       result = true;
     }
   }
@@ -76,3 +74,5 @@ async function checkModPerms(interaction, cmd, permission) {
 
   return result;
 }
+
+module.exports = { checkModPerms };
