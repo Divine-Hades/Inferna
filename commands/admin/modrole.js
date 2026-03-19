@@ -18,7 +18,7 @@ const { emojis, colors } = config;
 module.exports = {
   data: new SlashCommandBuilder()
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
-    .setName("mod-role")
+    .setName("modrole")
     .setDescription("modrole commands")
     .addSubcommand((cmd) =>
       cmd
@@ -35,6 +35,17 @@ module.exports = {
       cmd
         .setName("delete")
         .setDescription("Delete a mod role.")
+        .addRoleOption((opt) =>
+          opt
+            .setName("role")
+            .setDescription("Choose a role.")
+            .setRequired(true),
+        ),
+    )
+    .addSubcommand((cmd) =>
+      cmd
+        .setName("edit")
+        .setDescription("Edit a mod role.")
         .addRoleOption((opt) =>
           opt
             .setName("role")
@@ -77,7 +88,7 @@ module.exports = {
               embeds: [
                 {
                   title: `Unexpected Result`,
-                  description: `${emojis.error} ${role} has already been assigned as a mod role. \n\nUse the command **/mod-role list** to view all of the mod roles the server has created, as well as their settings.`,
+                  description: `${emojis.error} ${role} has already been assigned as a mod role. \n\nUse the command **/modrole list** to view all of the mod roles the server has created, as well as their settings.`,
                   color: parseInt(colors.red),
                   timestamp: new Date(),
                 },
@@ -219,7 +230,7 @@ module.exports = {
                   }
 
                   if (selected === "mr_sm_warn_add_cmd") {
-                    enabled_cmds.push("Warn Add");
+                    enabled_cmds.push("Warn");
                     opt_warnAdd = true;
                   }
 
@@ -285,7 +296,7 @@ module.exports = {
               embeds: [
                 {
                   title: "Unexpected Result",
-                  description: `${emojis.error} ${role} hasn't been assigned as a mod role. Please check the **/mod-role list** to see what roles are set up as a mod role.`,
+                  description: `${emojis.error} ${role} hasn't been assigned as a mod role. Please check the **/modrole list** to see what roles are set up as a mod role.`,
                   color: parseInt(colors.red),
                   timestamp: new Date(),
                 },
@@ -383,7 +394,7 @@ module.exports = {
               embeds: [
                 {
                   title: "Unexpected Result",
-                  description: `${emojis.error} This server has no mod roles set up. Use **/mod-role create** to create a mod role.`,
+                  description: `${emojis.error} This server has no mod roles set up. Use **/modrole create** to create a mod role.`,
                   color: parseInt(colors.red),
                   timestamp: new Date(),
                 },
@@ -401,8 +412,7 @@ module.exports = {
 
             let enabledPerms = [];
 
-            if (modRolePermissions.enableBan === true)
-                enabledPerms.push("Ban");
+            if (modRolePermissions.enableBan === true) enabledPerms.push("Ban");
             if (modRolePermissions.enableUnban === true)
               enabledPerms.push("Unban");
             if (modRolePermissions.enableTimeout === true)
@@ -436,6 +446,199 @@ module.exports = {
           pagination.render();
         }
         break;
+      case "edit": {
+        const role = options.getRole("role");
+
+        let existingData = await db.modRoles.findUnique({
+          where: {
+            guildId_roleId: { guildId: guild.id, roleId: role.id },
+          },
+        });
+
+        if (!existingData)
+          return interaction.reply({
+            flags: "Ephemeral",
+            embeds: [
+              {
+                title: "Unexpected Result",
+                description: `${emojis.error} ${role} is not assigned as a mod role. Please use **/modrole list** to view all active mod roles.`,
+                color: parseInt(colors.red),
+                timestamp: new Date(),
+              },
+            ],
+          });
+
+        let modRole_options = await db.modRoleOptions.findUnique({
+          where: {
+            modRoleId: existingData.modRoleId,
+          },
+        });
+
+        let slct_menu = new StringSelectMenuBuilder({
+          customId: "slct_edit_modrole",
+          placeholder: "Select mod commands to enable/disable",
+          max_values: 7,
+          options: [
+            {
+              label: "Kick",
+              description: "Enables the kick command.",
+              value: "mr_sm_kick_cmd",
+              default: modRole_options.enableKick,
+            },
+            {
+              label: "Ban",
+              description: "Enables the ban command.",
+              value: "mr_sm_ban_cmd",
+              default: modRole_options.enableBan,
+            },
+            {
+              label: "Unban",
+              description: "Enables the unban command.",
+              value: "mr_sm_unban_cmd",
+              default: modRole_options.enableUnban,
+            },
+            {
+              label: "Timeout",
+              description: "Enables the timeout command.",
+              value: "mr_sm_timeout_cmd",
+              default: modRole_options.enableTimeout,
+            },
+            {
+              label: "Remove Timeout",
+              description: "Enables the timeout remove command.",
+              value: "mr_sm_removetimeout_cmd",
+              default: modRole_options.enableTimeoutRemove,
+            },
+            {
+              label: "Warn Add",
+              description: "Enables the warn add command.",
+              value: "mr_sm_warn_add_cmd",
+              default: modRole_options.enableWarnAdd,
+            },
+            {
+              label: "Warn Remove",
+              description: "Enables the warn remove command.",
+              value: "mr_sm_warn_remove_cmd",
+              default: modRole_options.enableWarnRemove,
+            },
+          ],
+        });
+
+        let row = new ActionRowBuilder().addComponents(slct_menu);
+
+        let res = await interaction.reply({
+          embeds: [
+            {
+              description: `**Currently editing:** ${role}\n\nEnable/Disable moderation commands using the select menu below.`,
+              color: parseInt(colors.inferna),
+              timestamp: new Date(),
+            },
+          ],
+          components: [row],
+          flags: "Ephemeral"
+        });
+
+        let collector = await res.createMessageComponentCollector({
+          componentType: ComponentType.StringSelect,
+        });
+
+        let enabledCommands = [];
+        let disabledCommands = [];
+
+        let enableKick = false;
+        let enableBan = false;
+        let enableUnban = false;
+        let enableTimeout = false;
+        let enableTimeoutRemove = false;
+        let enableWarnAdd = false;
+        let enableWarnRemove = false;
+
+        collector.on("collect", async (i) => {
+          for (const val of i.values) {
+            if (val === "mr_sm_kick_cmd") {
+              enableKick = true;
+              enabledCommands.push("Kick");
+            }
+
+            if (val === "mr_sm_ban_cmd") {
+              enableBan = true;
+              enabledCommands.push("Ban");
+            }
+
+            if (val === "mr_sm_unban_cmd") {
+              enableUnban = true;
+              enabledCommands.push("Unban");
+            }
+
+            if (val === "mr_sm_timeout_cmd") {
+              enableTimeout = true;
+              enabledCommands.push("Timeout");
+            }
+
+            if (val === "mr_sm_removetimeout_cmd") {
+              enableTimeoutRemove = true;
+              enabledCommands.push("Timeout Remove");
+            }
+
+            if (val === "mr_sm_warn_add_cmd") {
+              enableWarnAdd = true;
+              enabledCommands.push("Warn");
+            }
+
+            if (val === "mr_sm_warn_remove_cmd") {
+              enableWarnRemove = true;
+              enabledCommands.push("Warn Remove");
+            }
+          }
+
+          if (enableKick === false) disabledCommands.push("Kick");
+          if (enableBan === false) disabledCommands.push("Ban");
+          if (enableUnban === false) disabledCommands.push("Unban");
+          if (enableTimeout === false) disabledCommands.push("Timeout");
+          if (enableTimeoutRemove === false)
+            disabledCommands.push("Timeout Remove");
+          if (enableWarnAdd === false) disabledCommands.push("Warn");
+          if (enableWarnRemove === false) disabledCommands.push("Warn Remove");
+
+          await db.modRoleOptions
+            .update({
+              where: {
+                modRoleId: modRole_options.modRoleId,
+              },
+              data: {
+                enableBan: enableBan,
+                enableKick: enableKick,
+                enableTimeout: enableTimeout,
+                enableTimeoutRemove: enableTimeoutRemove,
+                enableUnban: enableUnban,
+                enableWarnAdd: enableWarnAdd,
+                enableWarnRemove: enableWarnRemove,
+              },
+            })
+            .then(() => {
+              res.edit({
+                components: [],
+                embeds: [
+                  {
+                    description: `${emojis.check} ${role} mod role updated!\n\n`,
+                    color: parseInt(colors.green), 
+                    timestamp: new Date(),
+                    fields: [
+                      {
+                        name: "Enabled Commands",
+                        value: enabledCommands.join(", "),
+                      },
+                      {
+                        name: "Disabled Commands",
+                        value: disabledCommands.join(", ") || "*None*",
+                      },
+                    ],
+                  },
+                ],
+              });
+            });
+        });
+      }
     }
   },
 };
