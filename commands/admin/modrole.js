@@ -536,7 +536,7 @@ module.exports = {
               default: modRole_options.enableWarnRemove,
             },
             {
-              label: "Warn Purge",
+              label: "Purge",
               description: "Enables the /purge remove command.",
               value: "mr_sm_purge_cmd",
               default: modRole_options.enablePurge,
