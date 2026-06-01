@@ -12,7 +12,7 @@ const pool = new Pool({
 const adapter = new PrismaPg(pool, {
   schema: process.env.SCHEMA
 }); 
-
+    
 const db = new PrismaClient({
   adapter, 
 });
